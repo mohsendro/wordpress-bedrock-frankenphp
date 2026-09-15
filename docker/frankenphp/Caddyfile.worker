@@ -1,11 +1,16 @@
-{$SERVER_NAME} {
+{
+    frankenphp {
+        max_requests ${FRANKENPHP_MAX_REQUESTS:500}
+    }
+}
+${SERVER_NAME} {
     root * /app/web
     encode zstd gzip
-
     php_server {
-        worker /app/web/index.php
-        num 4
+        worker {
+            file /app/web/index.php
+            num ${FRANKENPHP_WORKERS:4}
+        }
     }
-
     file_server
 }
