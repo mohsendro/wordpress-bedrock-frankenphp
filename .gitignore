@@ -6,6 +6,8 @@ node_modules/
 web/app/uploads/
 web/app/cache/
 web/app/languages/
+backups/
+.deployed-tag
 *.log
 .DS_Store
 .idea/
