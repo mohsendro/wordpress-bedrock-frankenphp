@@ -17,6 +17,7 @@ env:
   REGISTRY: ghcr.io
   FRANKENPHP_IMAGE: ghcr.io/mohsendro/wordpress-bedrock-frankenphp
   PHP_FPM_IMAGE: ghcr.io/mohsendro/wordpress-bedrock-php-fpm
+  APP_DIR: /srv/apps/wordpress-bedrock-frankenphp
 
 jobs:
   test:
@@ -87,23 +88,69 @@ jobs:
       - name: Push PHP-FPM image
         run: docker push ${{ env.PHP_FPM_IMAGE }}:${{ github.sha }}
 
-  deploy:
-    name: Deploy production
+  provision:
+    name: Provision production server
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: production
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.2
+      - uses: actions/checkout@v4
+
+      - name: Install Docker and provision base server
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          fingerprint: ${{ secrets.PRODUCTION_HOST_FINGERPRINT }}
+          script_path: scripts/server-bootstrap.sh
+          command_timeout: 15m
+
+  deploy:
+    name: Deploy production
+    needs: provision
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
+      DEPLOY_SHA: ${{ github.sha }}
+    steps:
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
+          PRODUCTION_ENV: ${{ env.PRODUCTION_ENV }}
+          DEPLOY_SHA: ${{ env.DEPLOY_SHA }}
+          APP_DIR: ${{ env.APP_DIR }}
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          fingerprint: ${{ secrets.PRODUCTION_HOST_FINGERPRINT }}
+          envs: GITHUB_TOKEN,GITHUB_REPOSITORY,PRODUCTION_ENV,DEPLOY_SHA,APP_DIR
+          command_timeout: 20m
           script: |
             set -eu
-            cd /srv/apps/wordpress-bedrock-frankenphp
-            git fetch --prune origin main
+
+            AUTH="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\n')"
+            mkdir -p "$APP_DIR"
+
+            if [ ! -d "$APP_DIR/.git" ]; then
+              rm -rf "$APP_DIR"
+              git -c http.extraheader="AUTHORIZATION: basic $AUTH" clone "https://github.com/$GITHUB_REPOSITORY.git" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+            git -c http.extraheader="AUTHORIZATION: basic $AUTH" fetch --prune origin main
             git reset --hard origin/main
-            export IMAGE_TAG=${{ github.sha }}
+
+            printf '%s\n' "$PRODUCTION_ENV" > .env
+            chmod 600 .env
+            export IMAGE_TAG="$DEPLOY_SHA"
+
             ./scripts/deploy.sh
