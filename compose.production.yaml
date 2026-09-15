@@ -1,15 +1,14 @@
+# Production base. The deploy script adds either the FrankenPHP or PHP-FPM runtime file.
 services:
-  app:
-    image: ghcr.io/mohsendro/wordpress-bedrock-frankenphp:${IMAGE_TAG}
-    build: null
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - uploads:/app/web/app/uploads
-    restart: unless-stopped
+  mysql:
+    restart: always
 
-  wp-cli:
-    profiles: ["tools"]
-    volumes:
-      - uploads:/app/web/app/uploads
+  redis:
+    restart: always
+
+volumes:
+  mysql_data:
+  redis_data:
+  uploads:
+  caddy_data:
+  caddy_config:
