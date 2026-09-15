@@ -1,4 +1,5 @@
-FROM dunglas/frankenphp:1-php8.3-bookworm
+ARG PHP_VERSION=8.3
+FROM dunglas/frankenphp:1-php${PHP_VERSION}-bookworm
 
 WORKDIR /app
 
@@ -11,15 +12,20 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-COPY composer.json ./
-RUN composer update --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+COPY composer.json composer.lock* ./
+RUN if [ -f composer.lock ]; then composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader; else composer update --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader; fi
 
 COPY . .
 
 RUN curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp \
-    && chmod +x /usr/local/bin/wp
+    && chmod +x /usr/local/bin/wp \
+    && mkdir -p /app/web/app/uploads \
+    && chown -R www-data:www-data /app/web/app
 
 COPY docker/frankenphp/Caddyfile /etc/frankenphp/Caddyfile
+COPY docker/frankenphp/Caddyfile.worker /etc/frankenphp/Caddyfile.worker
+COPY docker/frankenphp/entrypoint.sh /usr/local/bin/frankenphp-entrypoint
 
-RUN mkdir -p /app/web/app/uploads \
-    && chown -R www-data:www-data /app/web/app
+RUN chmod +x /usr/local/bin/frankenphp-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/frankenphp-entrypoint"]
