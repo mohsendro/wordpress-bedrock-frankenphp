@@ -17,3 +17,18 @@ services:
       - uploads:/app/web/app/uploads
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     restart: always
+
+  wp-cli:
+    image: ghcr.io/mohsendro/wordpress-bedrock-php-fpm:${IMAGE_TAG}
+    build: null
+    working_dir: /app
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - uploads:/app/web/app/uploads
+    entrypoint: ["wp"]
+    profiles: ["tools"]
