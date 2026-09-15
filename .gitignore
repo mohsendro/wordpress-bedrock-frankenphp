@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+vendor/
+node_modules/
+web/app/uploads/
+web/app/cache/
+web/app/languages/
+*.log
+.DS_Store
+.idea/
+.vscode/
