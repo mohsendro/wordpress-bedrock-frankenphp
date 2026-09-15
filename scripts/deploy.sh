@@ -38,18 +38,36 @@ rollback() {
   fi
 }
 
-trap 'rollback' INT TERM ERR
-
+set +e
 $COMPOSE pull
+STATUS=$?
+if [ "$STATUS" -ne 0 ]; then
+  rollback
+  exit "$STATUS"
+fi
+
 $COMPOSE up -d --remove-orphans --wait
+STATUS=$?
+if [ "$STATUS" -ne 0 ]; then
+  rollback
+  exit "$STATUS"
+fi
 
 ./scripts/healthcheck.sh "${HEALTHCHECK_URL:-http://localhost}"
+STATUS=$?
+if [ "$STATUS" -ne 0 ]; then
+  rollback
+  exit "$STATUS"
+fi
 
-$COMPOSE --profile tools run --rm wp-cli core update-db || true
+$COMPOSE --profile tools run --rm wp-cli core update-db
+STATUS=$?
+if [ "$STATUS" -ne 0 ]; then
+  rollback
+  exit "$STATUS"
+fi
 
+set -e
 printf '%s\n' "$IMAGE_TAG" > .deployed-tag
-
 docker image prune -f
-trap - INT TERM ERR
-
 printf '%s\n' "Deployment completed successfully: $IMAGE_TAG"
