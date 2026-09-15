@@ -1,0 +1,37 @@
+name: Lock Composer Dependencies
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:2
+
+      - name: Resolve dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Commit composer.lock
+        run: |
+          if [ -z "$(git status --porcelain composer.lock)" ]; then
+            echo "composer.lock is already up to date."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "build: lock Composer dependencies"
+          git push
