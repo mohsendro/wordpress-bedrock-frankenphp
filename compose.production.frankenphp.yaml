@@ -7,7 +7,7 @@ services:
       - "${HTTPS_PORT:-443}:443"
       - "${HTTP3_PORT:-443}:443/udp"
     volumes:
-      - uploads:/app/web/app/uploads
+      - wp_content:/app/web/app
       - caddy_data:/data
       - caddy_config:/config
     restart: always
@@ -15,7 +15,19 @@ services:
   wp-cli:
     image: ghcr.io/mohsendro/wordpress-bedrock-frankenphp:${IMAGE_TAG}
     build: null
+    working_dir: /app
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
-      - ./:/app
-      - uploads:/app/web/app/uploads
+      - wp_content:/app/web/app
+    entrypoint: ["/usr/local/bin/wp-entrypoint"]
+    command: ["wp"]
     profiles: ["tools"]
+
+volumes:
+  wp_content:
