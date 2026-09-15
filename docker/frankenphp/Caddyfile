@@ -1,8 +1,11 @@
-{$SERVER_NAME} {
+{
+    frankenphp {
+        max_requests ${FRANKENPHP_MAX_REQUESTS:500}
+    }
+}
+${SERVER_NAME} {
     root * /app/web
     encode zstd gzip
-
     php_server
-
     file_server
 }
