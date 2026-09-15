@@ -4,6 +4,7 @@
 .env.*
 vendor
 node_modules
-web/app/uploads
-web/app/cache
+web/app/*
+!web/app/mu-plugins/
+!web/app/mu-plugins/**
 README.md
