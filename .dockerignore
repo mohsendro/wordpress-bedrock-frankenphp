@@ -1,0 +1,9 @@
+.git
+.github
+.env
+.env.*
+vendor
+node_modules
+web/app/uploads
+web/app/cache
+README.md
