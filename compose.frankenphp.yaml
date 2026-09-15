@@ -10,6 +10,8 @@ services:
     environment:
       SERVER_NAME: ${SERVER_NAME:-:80}
       FRANKENPHP_MODE: ${FRANKENPHP_MODE:-classic}
+      FRANKENPHP_WORKERS: ${FRANKENPHP_WORKERS:-4}
+      FRANKENPHP_MAX_REQUESTS: ${FRANKENPHP_MAX_REQUESTS:-500}
     depends_on:
       mysql:
         condition: service_healthy
@@ -21,7 +23,6 @@ services:
       - "${HTTP3_PORT:-443}:443/udp"
     volumes:
       - ./:/app
-      - uploads:/app/web/app/uploads
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped
