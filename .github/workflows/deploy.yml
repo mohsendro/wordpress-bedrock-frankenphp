@@ -118,6 +118,8 @@ jobs:
       GITHUB_REPOSITORY: ${{ github.repository }}
       PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
       DEPLOY_SHA: ${{ github.sha }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GHCR_USER: ${{ github.actor }}
     steps:
       - name: Deploy application
         uses: appleboy/ssh-action@v1
@@ -126,13 +128,15 @@ jobs:
           GITHUB_REPOSITORY: ${{ env.GITHUB_REPOSITORY }}
           PRODUCTION_ENV: ${{ env.PRODUCTION_ENV }}
           DEPLOY_SHA: ${{ env.DEPLOY_SHA }}
+          GHCR_TOKEN: ${{ env.GHCR_TOKEN }}
+          GHCR_USER: ${{ env.GHCR_USER }}
           APP_DIR: ${{ env.APP_DIR }}
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           fingerprint: ${{ secrets.PRODUCTION_HOST_FINGERPRINT }}
-          envs: GITHUB_TOKEN,GITHUB_REPOSITORY,PRODUCTION_ENV,DEPLOY_SHA,APP_DIR
+          envs: GITHUB_TOKEN,GITHUB_REPOSITORY,PRODUCTION_ENV,DEPLOY_SHA,GHCR_TOKEN,GHCR_USER,APP_DIR
           command_timeout: 20m
           script: |
             set -eu
@@ -151,6 +155,8 @@ jobs:
 
             printf '%s\n' "$PRODUCTION_ENV" > .env
             chmod 600 .env
-            export IMAGE_TAG="$DEPLOY_SHA"
 
+            printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GHCR_USER" --password-stdin
+
+            export IMAGE_TAG="$DEPLOY_SHA"
             ./scripts/deploy.sh
