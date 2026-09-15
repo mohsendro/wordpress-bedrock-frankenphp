@@ -1,8 +1,4 @@
-{
-    auto_https off
-}
-
-:80 {
+{$SERVER_NAME} {
     root * /app/web
     encode zstd gzip
 
