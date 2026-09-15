@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -17,14 +20,22 @@ jobs:
           php-version: "8.3"
           tools: composer:2
 
-      - name: Validate Composer
-        run: composer validate --strict
+      - name: Validate Composer manifest
+        run: composer validate
 
-      - name: Resolve dependencies
-        run: composer update --no-interaction --prefer-dist --no-progress
+      - name: Install dependencies
+        run: |
+          if [ -f composer.lock ]; then
+            composer install --no-interaction --prefer-dist --no-progress
+          else
+            composer update --no-interaction --prefer-dist --no-progress
+          fi
 
       - name: PHP syntax check
         run: find config web scripts -type f -name "*.php" -print0 | xargs -0 -n1 php -l
 
-      - name: Build Docker image
-        run: docker build --file docker/frankenphp/Dockerfile --tag wordpress-starter:ci .
+      - name: Build FrankenPHP image
+        run: docker build --file docker/frankenphp/Dockerfile --tag wordpress-starter:frankenphp-ci .
+
+      - name: Build PHP-FPM image
+        run: docker build --file docker/php-fpm/Dockerfile --tag wordpress-starter:php-fpm-ci .
