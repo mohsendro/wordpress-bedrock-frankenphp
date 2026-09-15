@@ -3,14 +3,18 @@
         max_requests ${FRANKENPHP_MAX_REQUESTS:500}
     }
 }
+
 ${SERVER_NAME} {
     root * /app/web
     encode zstd gzip
+
     php_server {
         worker {
             file /app/web/index.php
             num ${FRANKENPHP_WORKERS:4}
+            max_consecutive_failures 6
         }
     }
+
     file_server
 }
