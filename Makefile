@@ -1,22 +1,37 @@
-.PHONY: up down build logs shell wp health
+.PHONY: bootstrap up down restart build logs shell wp health composer lock backup
+
+bootstrap:
+	./scripts/bootstrap.sh
 
 up:
-	docker compose up -d --build
+	./scripts/compose.sh up -d --build --wait
 
 down:
-	docker compose down
+	./scripts/compose.sh down
+
+restart:
+	./scripts/compose.sh up -d --build --force-recreate --wait
 
 build:
-	docker compose build --no-cache
+	./scripts/compose.sh build --no-cache
 
 logs:
-	docker compose logs -f app
+	./scripts/compose.sh logs -f app
 
 shell:
-	docker compose exec app sh
+	./scripts/compose.sh exec app sh
 
 wp:
-	docker compose --profile tools run --rm wp-cli
+	./scripts/compose.sh --profile tools run --rm wp-cli
+
+composer:
+	./scripts/compose.sh run --rm --no-deps app composer
+
+lock:
+	composer update --no-interaction --prefer-dist --no-progress
+
+backup:
+	./scripts/backup-db.sh
 
 health:
 	./scripts/healthcheck.sh
