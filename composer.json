@@ -1,0 +1,29 @@
+{
+    "name": "mohsendro/wordpress-bedrock-frankenphp",
+    "type": "project",
+    "license": "MIT",
+    "description": "WordPress Bedrock starter with FrankenPHP, MySQL, Redis and WP-CLI.",
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://repo.wp-packages.org"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "roots/bedrock-autoloader": "^1.0",
+        "roots/wordpress": "^6.8"
+    },
+    "extra": {
+        "wordpress-install-dir": "web/wp"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/installers": true,
+            "roots/wordpress-core-installer": true
+        }
+    }
+}
