@@ -168,17 +168,38 @@ FRANKENPHP_ENABLED=false
 
 The server does not build application images. GitHub Actions builds and publishes them; the server pulls the exact image identified by the commit SHA.
 
-## 7. Production server
+## 7. Production server and zero-touch provisioning
 
-The initial server bootstrap is separate from normal application deployments. The application directory is:
+The GitHub Actions deployment can provision a fresh Debian/Ubuntu server automatically. It installs Docker Engine, Buildx and the Compose plugin, creates the application directory, authenticates to GHCR, pulls the exact images and starts the stack.
+
+Docker is installed from Docker's official apt repository rather than the distribution's unofficial Docker packages.
+
+The application directory is:
 
 ```text
 /srv/apps/wordpress-bedrock-frankenphp/
 ```
 
-It should contain the repository files plus a server-only `.env`.
+The only external prerequisites are:
 
-Example production configuration:
+- A Debian/Ubuntu server reachable over SSH
+- An SSH user with `sudo` privileges
+- DNS pointing the domain to the server
+- SSH credentials configured in the GitHub `production` environment
+
+## 8. GitHub production secrets
+
+Create a GitHub Actions environment named `production` and configure:
+
+```text
+PRODUCTION_HOST
+PRODUCTION_USER
+PRODUCTION_SSH_KEY
+PRODUCTION_HOST_FINGERPRINT
+PRODUCTION_ENV
+```
+
+`PRODUCTION_ENV` is a multiline secret containing the complete production `.env`, for example:
 
 ```dotenv
 WP_ENV=production
@@ -189,33 +210,39 @@ WP_SITEURL=https://example.com/wp
 FRANKENPHP_ENABLED=true
 FRANKENPHP_MODE=classic
 SERVER_NAME=example.com
+PHP_VERSION=8.3
 
-DB_NAME=...
-DB_USER=...
-DB_PASSWORD=...
+DB_NAME=wordpress
+DB_USER=wordpress
+DB_PASSWORD=<strong-password>
 DB_HOST=mysql
+DB_PREFIX=wp_
 
-MYSQL_DATABASE=...
-MYSQL_USER=...
-MYSQL_PASSWORD=...
-MYSQL_ROOT_PASSWORD=...
+MYSQL_DATABASE=wordpress
+MYSQL_USER=wordpress
+MYSQL_PASSWORD=<strong-password>
+MYSQL_ROOT_PASSWORD=<strong-root-password>
 
-AUTH_KEY=...
-SECURE_AUTH_KEY=...
-LOGGED_IN_KEY=...
-NONCE_KEY=...
-AUTH_SALT=...
-SECURE_AUTH_SALT=...
-LOGGED_IN_SALT=...
-NONCE_SALT=...
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+AUTH_KEY=<generated-secret>
+SECURE_AUTH_KEY=<generated-secret>
+LOGGED_IN_KEY=<generated-secret>
+NONCE_KEY=<generated-secret>
+AUTH_SALT=<generated-secret>
+SECURE_AUTH_SALT=<generated-secret>
+LOGGED_IN_SALT=<generated-secret>
+NONCE_SALT=<generated-secret>
 
 HEALTHCHECK_URL=https://example.com
-IMAGE_TAG=<commit-sha>
 ```
 
-`.env` is never committed.
+The workflow writes this secret to `.env` on the server with restrictive permissions. It is never committed to Git.
 
-## 8. GitHub Actions CI/CD
+`PRODUCTION_HOST_FINGERPRINT` should contain the SSH host fingerprint so the deployment connection can verify the intended server instead of blindly accepting a new host key.
+
+## 9. GitHub Actions CI/CD
 
 The deployment pipeline is:
 
@@ -236,7 +263,13 @@ Push images to GHCR
     ↓
 SSH to production
     ↓
-Update server checkout
+Install Docker if missing
+    ↓
+Clone/update repository
+    ↓
+Write production .env
+    ↓
+Authenticate to GHCR
     ↓
 Select runtime from FRANKENPHP_ENABLED
     ↓
@@ -253,15 +286,9 @@ HTTP health check
 Mark deployment successful
 ```
 
-The workflow targets the GitHub `production` environment. Configure these environment secrets:
+GitHub deployment environments can protect production with branch restrictions and approval rules when desired.
 
-```text
-PRODUCTION_HOST
-PRODUCTION_USER
-PRODUCTION_SSH_KEY
-```
-
-## 9. Backups and rollback
+## 10. Backups and rollback
 
 Before deployment, the server attempts a MySQL backup in:
 
@@ -277,7 +304,7 @@ The last successful image SHA is stored in:
 
 If the new image fails to start or the health check fails and a previous tag exists, the deployment script attempts to restore the previous application image automatically.
 
-## 10. Separation of code, secrets and state
+## 11. Separation of code, secrets and state
 
 ```text
 GitHub
