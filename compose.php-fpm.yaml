@@ -13,6 +13,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
+      - ./:/app
       - uploads:/app/web/app/uploads
     restart: unless-stopped
 
