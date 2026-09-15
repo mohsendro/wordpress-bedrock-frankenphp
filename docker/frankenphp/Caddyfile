@@ -4,13 +4,9 @@
 
 :80 {
     root * /app/web
-
     encode zstd gzip
 
-    php_server {
-        worker /app/web/index.php
-        num 4
-    }
+    php_server
 
     file_server
 }
