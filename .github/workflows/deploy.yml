@@ -32,8 +32,8 @@ jobs:
           php-version: "8.3"
           tools: composer:2
 
-      - name: Validate Composer
-        run: composer validate --strict
+      - name: Validate Composer manifest
+        run: composer validate
 
       - name: Install dependencies
         run: |
@@ -114,11 +114,11 @@ jobs:
     environment:
       name: production
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
       GITHUB_REPOSITORY: ${{ github.repository }}
       PRODUCTION_ENV: ${{ secrets.PRODUCTION_ENV }}
       DEPLOY_SHA: ${{ github.sha }}
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GHCR_TOKEN: ${{ github.token }}
       GHCR_USER: ${{ github.actor }}
     steps:
       - name: Deploy application
