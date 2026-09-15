@@ -20,6 +20,7 @@ services:
       - "${HTTPS_PORT:-443}:443"
       - "${HTTP3_PORT:-443}:443/udp"
     volumes:
+      - ./:/app
       - uploads:/app/web/app/uploads
       - caddy_data:/data
       - caddy_config:/config
