@@ -15,10 +15,12 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mohsendro/wordpress-bedrock-frankenphp
+  FRANKENPHP_IMAGE: ghcr.io/mohsendro/wordpress-bedrock-frankenphp
+  PHP_FPM_IMAGE: ghcr.io/mohsendro/wordpress-bedrock-php-fpm
 
 jobs:
-  build:
+  test:
+    name: Validate and test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,8 +31,32 @@ jobs:
           php-version: "8.3"
           tools: composer:2
 
-      - name: Resolve and lock dependencies
-        run: composer update --no-interaction --prefer-dist --no-progress
+      - name: Validate Composer
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: |
+          if [ -f composer.lock ]; then
+            composer install --no-interaction --prefer-dist --no-progress
+          else
+            composer update --no-interaction --prefer-dist --no-progress
+          fi
+
+      - name: PHP syntax check
+        run: find config web scripts -type f -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Build FrankenPHP image
+        run: docker build --file docker/frankenphp/Dockerfile --tag starter-frankenphp:test .
+
+      - name: Build PHP-FPM image
+        run: docker build --file docker/php-fpm/Dockerfile --tag starter-php-fpm:test .
+
+  build:
+    name: Build and publish images
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -39,19 +65,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build image
+      - name: Build FrankenPHP image
         run: |
           docker build \
             --file docker/frankenphp/Dockerfile \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --build-arg PHP_VERSION=8.3 \
+            --tag ${{ env.FRANKENPHP_IMAGE }}:${{ github.sha }} \
             .
 
-      - name: Push image
-        run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      - name: Push FrankenPHP image
+        run: docker push ${{ env.FRANKENPHP_IMAGE }}:${{ github.sha }}
+
+      - name: Build PHP-FPM image
+        run: |
+          docker build \
+            --file docker/php-fpm/Dockerfile \
+            --build-arg PHP_VERSION=8.3 \
+            --tag ${{ env.PHP_FPM_IMAGE }}:${{ github.sha }} \
+            .
+
+      - name: Push PHP-FPM image
+        run: docker push ${{ env.PHP_FPM_IMAGE }}:${{ github.sha }}
 
   deploy:
+    name: Deploy production
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: production
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
@@ -62,8 +103,7 @@ jobs:
           script: |
             set -eu
             cd /srv/apps/wordpress-bedrock-frankenphp
+            git fetch --prune origin main
+            git reset --hard origin/main
             export IMAGE_TAG=${{ github.sha }}
-            docker compose -f compose.yaml -f compose.production.yaml pull
-            docker compose -f compose.yaml -f compose.production.yaml up -d --remove-orphans
-            docker image prune -f
-            ./scripts/healthcheck.sh http://localhost
+            ./scripts/deploy.sh
