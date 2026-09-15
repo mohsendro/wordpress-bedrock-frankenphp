@@ -65,10 +65,7 @@ Config::define('NONCE_SALT', env('NONCE_SALT'));
 Config::define('AUTOMATIC_UPDATER_DISABLED', true);
 Config::define('DISABLE_WP_CRON', env('DISABLE_WP_CRON') ?: false);
 Config::define('DISALLOW_FILE_EDIT', true);
-
-if (WP_ENV === 'production') {
-    Config::define('DISALLOW_FILE_MODS', true);
-}
+Config::define('DISALLOW_FILE_MODS', env('DISALLOW_FILE_MODS') ?? false);
 
 Config::define('WP_POST_REVISIONS', env('WP_POST_REVISIONS') ?? true);
 Config::define('CONCATENATE_SCRIPTS', false);
