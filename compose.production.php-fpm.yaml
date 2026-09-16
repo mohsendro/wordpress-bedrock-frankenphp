@@ -25,7 +25,6 @@ services:
 
   wp-cli:
     image: ghcr.io/mohsendro/wordpress-bedrock-php-fpm:${IMAGE_TAG}
-    build: null
     working_dir: /app
     env_file:
       - .env
