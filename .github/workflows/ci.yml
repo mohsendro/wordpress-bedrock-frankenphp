@@ -21,7 +21,7 @@ jobs:
           tools: composer:2
 
       - name: Validate Composer manifest
-        run: composer validate
+        run: composer validate --strict
 
       - name: Install dependencies
         run: |
@@ -33,6 +33,13 @@ jobs:
 
       - name: PHP syntax check
         run: find config web scripts -type f -name "*.php" -print0 | xargs -0 -n1 php -l
+
+      - name: Validate Docker Compose configurations
+        run: |
+          docker compose -f compose.yaml -f compose.frankenphp.yaml config >/dev/null
+          docker compose -f compose.yaml -f compose.php-fpm.yaml config >/dev/null
+          docker compose -f compose.yaml -f compose.production.yaml -f compose.production.frankenphp.yaml config >/dev/null
+          docker compose -f compose.yaml -f compose.production.yaml -f compose.production.php-fpm.yaml config >/dev/null
 
       - name: Build FrankenPHP image
         run: docker build --file docker/frankenphp/Dockerfile --tag wordpress-starter:frankenphp-ci .
