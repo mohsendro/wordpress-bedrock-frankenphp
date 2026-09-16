@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 
+ARG FRANKENPHP_VERSION=1.12.7
 ARG PHP_VERSION=8.3
-FROM dunglas/frankenphp:1-php${PHP_VERSION}-bookworm
+FROM dunglas/frankenphp:${FRANKENPHP_VERSION}-php${PHP_VERSION}-bookworm
 
 ARG USER=www-data
+ARG WP_CLI_VERSION=2.12.0
 WORKDIR /app
 
 RUN apt-get update \
@@ -27,7 +29,7 @@ RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && { echo "opcache.enable=1"; echo "opcache.memory_consumption=192"; echo "opcache.interned_strings_buffer=16"; echo "opcache.max_accelerated_files=20000"; echo "opcache.validate_timestamps=0"; echo "opcache.save_comments=1"; } > "$PHP_INI_DIR/conf.d/10-opcache-recommended.ini" \
     && mkdir -p /opt/project-mu-plugins /app/web/app/uploads \
     && if [ -d /app/web/app/mu-plugins ]; then cp -a /app/web/app/mu-plugins/. /opt/project-mu-plugins/; fi \
-    && curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp \
+    && curl -fsSL https://github.com/wp-cli/wp-cli/releases/download/v${WP_CLI_VERSION}/wp-cli-${WP_CLI_VERSION}.phar -o /usr/local/bin/wp \
     && chmod +x /usr/local/bin/wp \
     && chown -R ${USER}:${USER} /app /data/caddy /config/caddy \
     && setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp
