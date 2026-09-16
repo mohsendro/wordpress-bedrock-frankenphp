@@ -2,10 +2,23 @@
     frankenphp {
         max_requests ${FRANKENPHP_MAX_REQUESTS:500}
     }
+
+    order request_header before php_server
+    order php_server before file_server
 }
-${SERVER_NAME} {
+
+${SERVER_NAME:localhost} {
     root * /app/web
-    encode zstd gzip
+    encode br zstd gzip
+
+    @health path /healthz
+    respond @health 200
+
+    @static {
+        path *.css *.js *.jpg *.jpeg *.png *.gif *.svg *.webp *.ico *.woff *.woff2 *.ttf
+    }
+    header @static Cache-Control "public, max-age=604800, immutable"
+
     php_server
     file_server
 }
