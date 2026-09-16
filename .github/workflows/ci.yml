@@ -34,6 +34,9 @@ jobs:
       - name: PHP syntax check
         run: find config web scripts -type f -name "*.php" -print0 | xargs -0 -n1 php -l
 
+      - name: Prepare test environment
+        run: cp .env.example .env
+
       - name: Validate Docker Compose configurations
         run: |
           docker compose -f compose.yaml -f compose.frankenphp.yaml config >/dev/null
