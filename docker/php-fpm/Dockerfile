@@ -9,9 +9,9 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl git unzip libjpeg-dev libwebp-dev libzip-dev libicu-dev libonig-dev libxml2-dev libmagickwand-dev \
-    && install-php-extensions bcmath exif gd intl mysqli pdo_mysql zip imagick opcache redis \
     && curl -fsSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
     && chmod +x /usr/local/bin/install-php-extensions \
+    && install-php-extensions bcmath exif gd intl mysqli pdo_mysql zip imagick opcache redis \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
