@@ -1,7 +1,6 @@
 services:
   app:
     image: ghcr.io/mohsendro/wordpress-bedrock-frankenphp:${IMAGE_TAG}
-    build: null
     env_file:
       - .env
     environment:
